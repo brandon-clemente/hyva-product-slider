@@ -1,0 +1,108 @@
+<?php
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\ProductListItem;
+use Magento\Catalog\Block\Product\ReviewRendererInterface;
+use Magento\CatalogWidget\Block\Product\ProductsList;
+use Magento\Framework\Escaper;
+
+/** @var ViewModelRegistry $viewModels */
+/** @var ProductsList $block */
+/** @var Escaper $escaper */
+
+$productListItemViewModel = $viewModels->require(ProductListItem::class);
+
+$collection = $block->getProductCollection();
+if (!$collection || !$collection->count()) {
+    return;
+}
+
+$items      = $collection->getItems();
+$showArrows = $block->getData('show_arrows') === 'true';
+$showDots   = $block->getData('show_dots') === 'true';
+$showPrices = $block->getData('show_prices') === 'true';
+$sliderId   = 'bid-product-slider';
+
+$perViewRaw   = $block->getData('per_view') ?: '1,2,3,4';
+$perViewParts = array_values(array_filter(array_map('trim', explode(',', $perViewRaw))));
+$pvBase = max(1, (int)($perViewParts[0] ?? 1));
+$pvSm   = isset($perViewParts[0]) && (int)$perViewParts[0] > 0 ? (int)$perViewParts[0] : null;
+$pvMd   = isset($perViewParts[1]) && (int)$perViewParts[1] > 0 ? (int)$perViewParts[1] : null;
+$pvLg   = isset($perViewParts[2]) && (int)$perViewParts[2] > 0 ? (int)$perViewParts[2] : null;
+$pvXl   = isset($perViewParts[3]) && (int)$perViewParts[3] > 0 ? (int)$perViewParts[3] : null;
+$slideWidthClass = implode(' ', array_filter([
+    $pvSm ? 'sm:[--snap-cols:' . $pvSm . ']' : null,
+    $pvMd ? 'md:[--snap-cols:' . $pvMd . ']' : null,
+    $pvLg ? 'lg:[--snap-cols:' . $pvLg . ']' : null,
+    $pvXl ? 'xl:[--snap-cols:' . $pvXl . ']' : null,
+]));
+
+?>
+
+<style>
+    <?php if (!$showPrices): ?>#<?= $escaper->escapeHtmlAttr($sliderId) ?> .price-box { display: none; }<?php endif; ?>
+</style>
+
+<section
+    id="<?= $escaper->escapeHtmlAttr($sliderId) ?>"
+    class="bid-product-slider widget-product-carousel"
+    role="region"
+    aria-label="<?= $escaper->escapeHtmlAttr(__('Product Slider')) ?>"
+>
+    <a
+        href="#<?= $escaper->escapeHtmlAttr($sliderId) ?>-end"
+        class="sr-only focus:not-sr-only focus:absolute focus:p-2 focus:bg-white"
+    ><?= $escaper->escapeHtml(__('Press to skip carousel')) ?></a>
+
+    <div class="snap-track <?= $slideWidthClass ?>" data-track>
+        <?php foreach ($items as $_item): ?>
+            <div class="flex flex-col">
+                <?= $productListItemViewModel->getItemHtml(
+                    $_item,
+                    $block,
+                    'grid',
+                    ReviewRendererInterface::SHORT_VIEW,
+                    'new_products_content_widget_grid',
+                    false
+                ) ?>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <?= $block->getBlockHtml('pagebuilder.carousel.nav') ?>
+
+    <span id="<?= $escaper->escapeHtmlAttr($sliderId) ?>-end" tabindex="-1"></span>
+</section>
+
+<script>
+    (() => {
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof SnapSlider === 'undefined') return;
+
+            const section = document.getElementById('<?= $escaper->escapeJs($sliderId) ?>');
+            if (!section) return;
+
+            const wrapper = section.closest('[data-content-type="buyitdirect_product_slider"]');
+            const autoPager = wrapper ? wrapper.dataset.showDots  !== 'false' : true;
+            const showArrows = wrapper ? wrapper.dataset.showArrows === 'true'  : true;
+
+            const sliderNav = section.querySelector('[data-page-builder-slider-nav]');
+
+            if (sliderNav && autoPager) {
+                const pager = sliderNav.querySelector('[data-init-pager]');
+                if (pager) {
+                    pager.setAttribute('data-pager', '');
+                    pager.removeAttribute('data-init-pager');
+                }
+            }
+
+            if (sliderNav && !showArrows) {
+                sliderNav.querySelectorAll('[data-prev],[data-next]').forEach(btn => btn.remove());
+            }
+
+            new SnapSlider(section, { autoPager, groupPager: true });
+        });
+    })();
+</script>
