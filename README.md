@@ -12,6 +12,9 @@ I implemented the product slider by adapting the existing product carousel widge
 
 <img width="1620" height="1038" alt="Screenshot 2026-02-23 at 3 31 10 PM" src="https://github.com/user-attachments/assets/d8ef0b80-7dfa-4ab1-b2d1-e0f7c32988d2" />
 
+Installation Guide: Copy the BuyitDirect/PageBuilderProductSlider to app/code, run bin/magento setup:upgrade, run bin/magento cache:flush
+
+
 Some Issues:
 The "Limit" and "Sort By" is not working on "Condtion" option from "Select Products By". However, it is working fine for "SKU"
 The "Per View" is a bit buggy when setting the number to more than 4
